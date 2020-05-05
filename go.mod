@@ -3,6 +3,7 @@ module gopkg.in/oauth2.v3
 go 1.13
 
 require (
+	git.rrdc.de/lib/errors v0.2.2
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fasthttp-contrib/websocket v0.0.0-20160511215533-1f3b11f56072 // indirect

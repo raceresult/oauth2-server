@@ -8,8 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"git.rrdc.de/lib/errors"
 	"gopkg.in/oauth2.v3"
-	"gopkg.in/oauth2.v3/errors"
+	errs "gopkg.in/oauth2.v3/errors"
 )
 
 // NewDefaultServer create a default authorization server
@@ -28,11 +29,11 @@ func NewServer(cfg *Config, manager oauth2.Manager) *Server {
 	srv.ClientInfoHandler = ClientBasicHandler
 
 	srv.UserAuthorizationHandler = func(w http.ResponseWriter, r *http.Request) (string, error) {
-		return "", errors.ErrAccessDenied
+		return "", errs.ErrAccessDenied
 	}
 
-	srv.PasswordAuthorizationHandler = func(username, password string) (string, error) {
-		return "", errors.ErrAccessDenied
+	srv.PasswordAuthorizationHandler = func(username, password string, grantType oauth2.GrantType) (string, error) {
+		return "", errs.ErrAccessDenied
 	}
 	return srv
 }
@@ -75,7 +76,10 @@ func (s *Server) redirect(w http.ResponseWriter, req *AuthorizeRequest, data map
 
 func (s *Server) tokenError(w http.ResponseWriter, err error) error {
 	data, statusCode, header := s.GetErrorData(err)
-	return s.token(w, data, header, statusCode)
+	if r := s.token(w, data, header, statusCode); r != nil {
+		return r
+	}
+	return err
 }
 
 func (s *Server) token(w http.ResponseWriter, data map[string]interface{}, header http.Header, statusCode ...int) error {
@@ -143,14 +147,14 @@ func (s *Server) ValidationAuthorizeRequest(r *http.Request) (*AuthorizeRequest,
 	clientID := r.FormValue("client_id")
 	if !(r.Method == "GET" || r.Method == "POST") ||
 		clientID == "" {
-		return nil, errors.ErrInvalidRequest
+		return nil, errs.ErrInvalidRequest
 	}
 
 	resType := oauth2.ResponseType(r.FormValue("response_type"))
 	if resType.String() == "" {
-		return nil, errors.ErrUnsupportedResponseType
+		return nil, errs.ErrUnsupportedResponseType
 	} else if allowed := s.CheckResponseType(resType); !allowed {
-		return nil, errors.ErrUnauthorizedClient
+		return nil, errs.ErrUnauthorizedClient
 	}
 
 	req := &AuthorizeRequest{
@@ -177,7 +181,7 @@ func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (oauth2.TokenInfo, err
 		if err != nil {
 			return nil, err
 		} else if !allowed {
-			return nil, errors.ErrUnauthorizedClient
+			return nil, errs.ErrUnauthorizedClient
 		}
 	}
 
@@ -187,7 +191,7 @@ func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (oauth2.TokenInfo, err
 		if err != nil {
 			return nil, err
 		} else if !allowed {
-			return nil, errors.ErrInvalidScope
+			return nil, errs.ErrInvalidScope
 		}
 	}
 
@@ -268,12 +272,12 @@ func (s *Server) HandleAuthorizeRequest(w http.ResponseWriter, r *http.Request) 
 func (s *Server) ValidationTokenRequest(r *http.Request) (oauth2.GrantType, *oauth2.TokenGenerateRequest, error) {
 	if v := r.Method; !(v == "POST" ||
 		(s.Config.AllowGetAccessRequest && v == "GET")) {
-		return "", nil, errors.ErrInvalidRequest
+		return "", nil, errs.ErrInvalidRequest
 	}
 
 	gt := oauth2.GrantType(r.FormValue("grant_type"))
 	if gt.String() == "" {
-		return "", nil, errors.ErrUnsupportedGrantType
+		return "", nil, errs.ErrUnsupportedGrantType
 	}
 
 	clientID, clientSecret, err := s.ClientInfoHandler(r)
@@ -293,20 +297,29 @@ func (s *Server) ValidationTokenRequest(r *http.Request) (oauth2.GrantType, *oau
 		tgr.Code = r.FormValue("code")
 		if tgr.RedirectURI == "" ||
 			tgr.Code == "" {
-			return "", nil, errors.ErrInvalidRequest
+			return "", nil, errs.ErrInvalidRequest
 		}
-	case oauth2.PasswordCredentials:
+	case oauth2.PasswordCredentials, oauth2.PasswordHash, oauth2.PasswordPlain:
 		tgr.Scope = r.FormValue("scope")
-		username, password := r.FormValue("username"), r.FormValue("password")
-		if username == "" || password == "" {
-			return "", nil, errors.ErrInvalidRequest
+		var username, password string
+		switch gt {
+		case oauth2.PasswordCredentials, oauth2.PasswordPlain:
+			username, password = r.FormValue("username"), r.FormValue("password")
+			if username == "" || password == "" {
+				return "", nil, errs.ErrInvalidRequest
+			}
+		case oauth2.PasswordHash:
+			username = r.FormValue("userhash")
+			if username == "" && !strings.Contains(username, "_") {
+				return "", nil, errs.ErrInvalidRequest
+			}
 		}
 
-		userID, err := s.PasswordAuthorizationHandler(username, password)
+		userID, err := s.PasswordAuthorizationHandler(username, password, gt)
 		if err != nil {
 			return "", nil, err
 		} else if userID == "" {
-			return "", nil, errors.ErrInvalidGrant
+			return "", nil, errs.ErrInvalidGrant
 		}
 		tgr.UserID = userID
 	case oauth2.ClientCredentials:
@@ -315,7 +328,7 @@ func (s *Server) ValidationTokenRequest(r *http.Request) (oauth2.GrantType, *oau
 		tgr.Refresh = r.FormValue("refresh_token")
 		tgr.Scope = r.FormValue("scope")
 		if tgr.Refresh == "" {
-			return "", nil, errors.ErrInvalidRequest
+			return "", nil, errs.ErrInvalidRequest
 		}
 	}
 	return gt, tgr, nil
@@ -334,15 +347,15 @@ func (s *Server) CheckGrantType(gt oauth2.GrantType) bool {
 // GetAccessToken access token
 func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRequest) (oauth2.TokenInfo, error) {
 	if allowed := s.CheckGrantType(gt); !allowed {
-		return nil, errors.ErrUnauthorizedClient
+		return nil, errors.WithStack(errs.ErrUnauthorizedClient)
 	}
 
 	if fn := s.ClientAuthorizedHandler; fn != nil {
 		allowed, err := fn(tgr.ClientID, gt)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		} else if !allowed {
-			return nil, errors.ErrUnauthorizedClient
+			return nil, errors.WithStack(errs.ErrUnauthorizedClient)
 		}
 	}
 
@@ -351,55 +364,56 @@ func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRe
 		ti, err := s.Manager.GenerateAccessToken(gt, tgr)
 		if err != nil {
 			switch err {
-			case errors.ErrInvalidAuthorizeCode:
-				return nil, errors.ErrInvalidGrant
-			case errors.ErrInvalidClient:
-				return nil, errors.ErrInvalidClient
+			case errs.ErrInvalidAuthorizeCode:
+				return nil, errors.WithStack(errs.ErrInvalidGrant)
+			case errs.ErrInvalidClient:
+				return nil, errors.WithStack(errs.ErrInvalidClient)
 			default:
-				return nil, err
+				return nil, errors.WithStack(err)
 			}
 		}
 		return ti, nil
-	case oauth2.PasswordCredentials, oauth2.ClientCredentials:
+	case oauth2.PasswordCredentials, oauth2.ClientCredentials, oauth2.PasswordHash, oauth2.PasswordPlain:
 		if fn := s.ClientScopeHandler; fn != nil {
 			allowed, err := fn(tgr.ClientID, tgr.Scope)
 			if err != nil {
-				return nil, err
+				return nil, errors.WithStack(err)
 			} else if !allowed {
-				return nil, errors.ErrInvalidScope
+				return nil, errors.WithStack(errs.ErrInvalidScope)
 			}
 		}
-		return s.Manager.GenerateAccessToken(gt, tgr)
+		token, err := s.Manager.GenerateAccessToken(gt, tgr)
+		return token, errors.WithStack(err)
 	case oauth2.Refreshing:
 		// check scope
 		if scope, scopeFn := tgr.Scope, s.RefreshingScopeHandler; scope != "" && scopeFn != nil {
 			rti, err := s.Manager.LoadRefreshToken(tgr.Refresh)
 			if err != nil {
-				if err == errors.ErrInvalidRefreshToken || err == errors.ErrExpiredRefreshToken {
-					return nil, errors.ErrInvalidGrant
+				if err == errs.ErrInvalidRefreshToken || err == errs.ErrExpiredRefreshToken {
+					return nil, errors.WithStack(errs.ErrInvalidGrant)
 				}
-				return nil, err
+				return nil, errors.WithStack(err)
 			}
 
 			allowed, err := scopeFn(scope, rti.GetScope())
 			if err != nil {
-				return nil, err
+				return nil, errors.WithStack(err)
 			} else if !allowed {
-				return nil, errors.ErrInvalidScope
+				return nil, errors.WithStack(errs.ErrInvalidScope)
 			}
 		}
 
 		ti, err := s.Manager.RefreshAccessToken(tgr)
 		if err != nil {
-			if err == errors.ErrInvalidRefreshToken || err == errors.ErrExpiredRefreshToken {
-				return nil, errors.ErrInvalidGrant
+			if err == errs.ErrInvalidRefreshToken || err == errs.ErrExpiredRefreshToken {
+				return nil, errors.WithStack(errs.ErrInvalidGrant)
 			}
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 		return ti, nil
 	}
 
-	return nil, errors.ErrUnsupportedGrantType
+	return nil, errors.WithStack(errs.ErrUnsupportedGrantType)
 }
 
 // GetTokenData token data
@@ -447,11 +461,11 @@ func (s *Server) HandleTokenRequest(w http.ResponseWriter, r *http.Request) erro
 
 // GetErrorData get error response data
 func (s *Server) GetErrorData(err error) (map[string]interface{}, int, http.Header) {
-	var re errors.Response
-	if v, ok := errors.Descriptions[err]; ok {
+	var re errs.Response
+	if v, ok := errs.Descriptions[err]; ok {
 		re.Error = err
 		re.Description = v
-		re.StatusCode = errors.StatusCodes[err]
+		re.StatusCode = errs.StatusCodes[err]
 	} else {
 		if fn := s.InternalErrorHandler; fn != nil {
 			if v := fn(err); v != nil {
@@ -460,9 +474,9 @@ func (s *Server) GetErrorData(err error) (map[string]interface{}, int, http.Head
 		}
 
 		if re.Error == nil {
-			re.Error = errors.ErrServerError
-			re.Description = errors.Descriptions[errors.ErrServerError]
-			re.StatusCode = errors.StatusCodes[errors.ErrServerError]
+			re.Error = errs.ErrServerError
+			re.Description = errs.Descriptions[errs.ErrServerError]
+			re.StatusCode = errs.StatusCodes[errs.ErrServerError]
 		}
 	}
 
@@ -515,7 +529,7 @@ func (s *Server) BearerAuth(r *http.Request) (string, bool) {
 func (s *Server) ValidationBearerToken(r *http.Request) (oauth2.TokenInfo, error) {
 	accessToken, ok := s.BearerAuth(r)
 	if !ok {
-		return nil, errors.ErrInvalidAccessToken
+		return nil, errs.ErrInvalidAccessToken
 	}
 
 	return s.Manager.LoadAccessToken(accessToken)

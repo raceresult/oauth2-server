@@ -22,6 +22,8 @@ const (
 	PasswordCredentials GrantType = "password"
 	ClientCredentials   GrantType = "client_credentials"
 	Refreshing          GrantType = "refresh_token"
+	PasswordHash        GrantType = "hash"
+	PasswordPlain       GrantType = "password_plain"
 	Implicit            GrantType = "__implicit"
 )
 
@@ -29,7 +31,9 @@ func (gt GrantType) String() string {
 	if gt == AuthorizationCode ||
 		gt == PasswordCredentials ||
 		gt == ClientCredentials ||
-		gt == Refreshing {
+		gt == Refreshing ||
+		gt == PasswordHash ||
+		gt == PasswordPlain {
 		return string(gt)
 	}
 	return ""
