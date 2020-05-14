@@ -3,6 +3,7 @@ module gopkg.in/oauth2.v3
 go 1.13
 
 require (
+	git.rrdc.de/lib/authyclient v0.0.2
 	git.rrdc.de/lib/errors v0.2.2
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -20,7 +21,6 @@ require (
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/stretchr/testify v1.4.0 // indirect
 	github.com/tidwall/btree v0.0.0-20170113224114-9876f1454cf0 // indirect
 	github.com/tidwall/buntdb v1.1.0
 	github.com/tidwall/gjson v1.3.2 // indirect
@@ -33,5 +33,7 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
-	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 )
+
+replace golang.org/x/oauth2 => github.com/raceresult/oauth2 v0.1.2

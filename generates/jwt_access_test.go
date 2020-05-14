@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"git.rrdc.de/lib/authyclient"
 	"github.com/dgrijalva/jwt-go"
 	"gopkg.in/oauth2.v3"
 	"gopkg.in/oauth2.v3/generates"
@@ -27,17 +28,21 @@ func TestJWTAccess(t *testing.T) {
 			},
 		}
 
-		gen := generates.NewJWTAccessGenerate([]byte("00000000"), jwt.SigningMethodHS512)
+		jwtPrivateKey, err := authyclient.DecodePrivateKey([]byte(authyclient.DebugPrivateKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		gen := generates.NewJWTAccessGenerate(jwtPrivateKey, authyclient.SigningMethodEd25519)
 		access, refresh, err := gen.Token(data, true)
 		So(err, ShouldBeNil)
 		So(access, ShouldNotBeEmpty)
 		So(refresh, ShouldNotBeEmpty)
 
 		token, err := jwt.ParseWithClaims(access, &generates.JWTAccessClaims{}, func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			if _, ok := t.Method.(*authyclient.SigningMethodEdDSA); !ok {
 				return nil, fmt.Errorf("parse error")
 			}
-			return []byte("00000000"), nil
+			return jwtPrivateKey.Public(), nil
 		})
 		So(err, ShouldBeNil)
 

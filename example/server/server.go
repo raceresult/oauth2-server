@@ -10,6 +10,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-session/session"
+	"gopkg.in/oauth2.v3"
 	"gopkg.in/oauth2.v3/errors"
 	"gopkg.in/oauth2.v3/generates"
 	"gopkg.in/oauth2.v3/manage"
@@ -38,7 +39,7 @@ func main() {
 
 	srv := server.NewServer(server.NewConfig(), manager)
 
-	srv.SetPasswordAuthorizationHandler(func(username, password string) (userID string, err error) {
+	srv.SetPasswordAuthorizationHandler(func(username, password string, _ oauth2.GrantType) (userID string, err error) {
 		if username == "test" && password == "test" {
 			userID = "test"
 		}

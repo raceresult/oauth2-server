@@ -29,11 +29,11 @@ func NewServer(cfg *Config, manager oauth2.Manager) *Server {
 	srv.ClientInfoHandler = ClientBasicHandler
 
 	srv.UserAuthorizationHandler = func(w http.ResponseWriter, r *http.Request) (string, error) {
-		return "", errs.ErrAccessDenied
+		return "", errors.WithStack(errs.ErrAccessDenied)
 	}
 
 	srv.PasswordAuthorizationHandler = func(username, password string, grantType oauth2.GrantType) (string, error) {
-		return "", errs.ErrAccessDenied
+		return "", errors.WithStack(errs.ErrAccessDenied)
 	}
 	return srv
 }
@@ -147,14 +147,14 @@ func (s *Server) ValidationAuthorizeRequest(r *http.Request) (*AuthorizeRequest,
 	clientID := r.FormValue("client_id")
 	if !(r.Method == "GET" || r.Method == "POST") ||
 		clientID == "" {
-		return nil, errs.ErrInvalidRequest
+		return nil, errors.WithStack(errs.ErrInvalidRequest)
 	}
 
 	resType := oauth2.ResponseType(r.FormValue("response_type"))
 	if resType.String() == "" {
-		return nil, errs.ErrUnsupportedResponseType
+		return nil, errors.WithStack(errs.ErrUnsupportedResponseType)
 	} else if allowed := s.CheckResponseType(resType); !allowed {
-		return nil, errs.ErrUnauthorizedClient
+		return nil, errors.WithStack(errs.ErrUnauthorizedClient)
 	}
 
 	req := &AuthorizeRequest{
@@ -181,7 +181,7 @@ func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (oauth2.TokenInfo, err
 		if err != nil {
 			return nil, err
 		} else if !allowed {
-			return nil, errs.ErrUnauthorizedClient
+			return nil, errors.WithStack(errs.ErrUnauthorizedClient)
 		}
 	}
 
@@ -191,7 +191,7 @@ func (s *Server) GetAuthorizeToken(req *AuthorizeRequest) (oauth2.TokenInfo, err
 		if err != nil {
 			return nil, err
 		} else if !allowed {
-			return nil, errs.ErrInvalidScope
+			return nil, errors.WithStack(errs.ErrInvalidScope)
 		}
 	}
 
@@ -272,12 +272,12 @@ func (s *Server) HandleAuthorizeRequest(w http.ResponseWriter, r *http.Request) 
 func (s *Server) ValidationTokenRequest(r *http.Request) (oauth2.GrantType, *oauth2.TokenGenerateRequest, error) {
 	if v := r.Method; !(v == "POST" ||
 		(s.Config.AllowGetAccessRequest && v == "GET")) {
-		return "", nil, errs.ErrInvalidRequest
+		return "", nil, errors.WithStack(errs.ErrInvalidRequest)
 	}
 
 	gt := oauth2.GrantType(r.FormValue("grant_type"))
 	if gt.String() == "" {
-		return "", nil, errs.ErrUnsupportedGrantType
+		return "", nil, errors.WithStack(errs.ErrUnsupportedGrantType)
 	}
 
 	clientID, clientSecret, err := s.ClientInfoHandler(r)
@@ -297,21 +297,26 @@ func (s *Server) ValidationTokenRequest(r *http.Request) (oauth2.GrantType, *oau
 		tgr.Code = r.FormValue("code")
 		if tgr.RedirectURI == "" ||
 			tgr.Code == "" {
-			return "", nil, errs.ErrInvalidRequest
+			return "", nil, errors.WithStack(errs.ErrInvalidRequest)
 		}
-	case oauth2.PasswordCredentials, oauth2.PasswordHash, oauth2.PasswordPlain:
+	case oauth2.PasswordCredentials, oauth2.PasswordHash, oauth2.PasswordPlain, oauth2.APIKey:
 		tgr.Scope = r.FormValue("scope")
 		var username, password string
 		switch gt {
 		case oauth2.PasswordCredentials, oauth2.PasswordPlain:
 			username, password = r.FormValue("username"), r.FormValue("password")
 			if username == "" || password == "" {
-				return "", nil, errs.ErrInvalidRequest
+				return "", nil, errors.WithStack(errs.ErrInvalidRequest)
 			}
 		case oauth2.PasswordHash:
 			username = r.FormValue("userhash")
 			if username == "" && !strings.Contains(username, "_") {
-				return "", nil, errs.ErrInvalidRequest
+				return "", nil, errors.WithStack(errs.ErrInvalidRequest)
+			}
+		case oauth2.APIKey:
+			username = r.FormValue("apikey")
+			if username == "" && !strings.Contains(username, ".") {
+				return "", nil, errors.WithStack(errs.ErrInvalidRequest)
 			}
 		}
 
@@ -319,7 +324,7 @@ func (s *Server) ValidationTokenRequest(r *http.Request) (oauth2.GrantType, *oau
 		if err != nil {
 			return "", nil, err
 		} else if userID == "" {
-			return "", nil, errs.ErrInvalidGrant
+			return "", nil, errors.WithStack(errs.ErrInvalidGrant)
 		}
 		tgr.UserID = userID
 	case oauth2.ClientCredentials:
@@ -328,7 +333,7 @@ func (s *Server) ValidationTokenRequest(r *http.Request) (oauth2.GrantType, *oau
 		tgr.Refresh = r.FormValue("refresh_token")
 		tgr.Scope = r.FormValue("scope")
 		if tgr.Refresh == "" {
-			return "", nil, errs.ErrInvalidRequest
+			return "", nil, errors.WithStack(errs.ErrInvalidRequest)
 		}
 	}
 	return gt, tgr, nil
@@ -373,7 +378,7 @@ func (s *Server) GetAccessToken(gt oauth2.GrantType, tgr *oauth2.TokenGenerateRe
 			}
 		}
 		return ti, nil
-	case oauth2.PasswordCredentials, oauth2.ClientCredentials, oauth2.PasswordHash, oauth2.PasswordPlain:
+	case oauth2.PasswordCredentials, oauth2.ClientCredentials, oauth2.PasswordHash, oauth2.PasswordPlain, oauth2.APIKey:
 		if fn := s.ClientScopeHandler; fn != nil {
 			allowed, err := fn(tgr.ClientID, tgr.Scope)
 			if err != nil {
@@ -529,7 +534,7 @@ func (s *Server) BearerAuth(r *http.Request) (string, bool) {
 func (s *Server) ValidationBearerToken(r *http.Request) (oauth2.TokenInfo, error) {
 	accessToken, ok := s.BearerAuth(r)
 	if !ok {
-		return nil, errs.ErrInvalidAccessToken
+		return nil, errors.WithStack(errs.ErrInvalidAccessToken)
 	}
 
 	return s.Manager.LoadAccessToken(accessToken)

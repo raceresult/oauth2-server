@@ -27,6 +27,7 @@ func NewConfig() *Config {
 			oauth2.Refreshing,
 			oauth2.PasswordHash,
 			oauth2.PasswordPlain,
+			oauth2.APIKey,
 		},
 	}
 }

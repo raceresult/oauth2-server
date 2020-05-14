@@ -49,7 +49,7 @@ func (m *Manager) grantConfig(gt oauth2.GrantType) *Config {
 		return DefaultAuthorizeCodeTokenCfg
 	case oauth2.Implicit:
 		return DefaultImplicitTokenCfg
-	case oauth2.PasswordCredentials, oauth2.PasswordPlain, oauth2.PasswordHash:
+	case oauth2.PasswordCredentials, oauth2.PasswordPlain, oauth2.PasswordHash, oauth2.APIKey:
 		return DefaultPasswordTokenCfg
 	case oauth2.ClientCredentials:
 		return DefaultClientTokenCfg
@@ -87,9 +87,14 @@ func (m *Manager) SetHashTokenCfg(cfg *Config) {
 	m.gtcfg[oauth2.PasswordHash] = cfg
 }
 
-// SetPasswordPlainTokenCfg set the hash grant token config
+// SetPasswordPlainTokenCfg set the plain password grant token config
 func (m *Manager) SetPasswordPlainTokenCfg(cfg *Config) {
 	m.gtcfg[oauth2.PasswordPlain] = cfg
+}
+
+// SetAPIKeyTokenCfg set the api key grant token config
+func (m *Manager) SetAPIKeyTokenCfg(cfg *Config) {
+	m.gtcfg[oauth2.APIKey] = cfg
 }
 
 // SetRefreshTokenCfg set the refreshing token config

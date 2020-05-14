@@ -24,6 +24,7 @@ const (
 	Refreshing          GrantType = "refresh_token"
 	PasswordHash        GrantType = "hash"
 	PasswordPlain       GrantType = "password_plain"
+	APIKey              GrantType = "api_key"
 	Implicit            GrantType = "__implicit"
 )
 
@@ -33,7 +34,8 @@ func (gt GrantType) String() string {
 		gt == ClientCredentials ||
 		gt == Refreshing ||
 		gt == PasswordHash ||
-		gt == PasswordPlain {
+		gt == PasswordPlain ||
+		gt == APIKey {
 		return string(gt)
 	}
 	return ""
