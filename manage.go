@@ -20,27 +20,27 @@ type TokenGenerateRequest struct {
 
 // Manager authorization management interface
 type Manager interface {
-	// get the client information
+	// GetClient gets the client information
 	GetClient(clientID string) (cli ClientInfo, err error)
 
-	// generate the authorization token(code)
+	// GenerateAuthToken generates the authorization token(code)
 	GenerateAuthToken(rt ResponseType, tgr *TokenGenerateRequest) (authToken TokenInfo, err error)
 
-	// generate the access token
+	// GenerateAccessToken generates the access token
 	GenerateAccessToken(rt GrantType, tgr *TokenGenerateRequest) (accessToken TokenInfo, err error)
 
-	// refreshing an access token
+	// RefreshAccessToken refreshes an access token
 	RefreshAccessToken(tgr *TokenGenerateRequest) (accessToken TokenInfo, err error)
 
-	// use the access token to delete the token information
+	// RemoveAccessToken uses the access token to delete the token information
 	RemoveAccessToken(access string) (err error)
 
-	// use the refresh token to delete the token information
+	// RemoveRefreshToken uses the refresh token to delete the token information
 	RemoveRefreshToken(refresh string) (err error)
 
-	// according to the access token for corresponding token information
+	// LoadAccessToken returns corresponding token information for the access token
 	LoadAccessToken(access string) (ti TokenInfo, err error)
 
-	// according to the refresh token for corresponding token information
+	// LoadRefreshToken return corresponding token information for the refresh token
 	LoadRefreshToken(refresh string) (ti TokenInfo, err error)
 }
