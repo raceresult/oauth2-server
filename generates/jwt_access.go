@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"git.rrdc.de/lib/errors"
+	"git.rrdc.de/lib/log/errors"
 	"github.com/dgrijalva/jwt-go"
 	"gopkg.in/oauth2.v3"
 	errs "gopkg.in/oauth2.v3/errors"
@@ -53,7 +53,7 @@ func (a *JWTAccessGenerate) Token(data *oauth2.GenerateBasic, isGenRefresh bool)
 	token := jwt.NewWithClaims(a.SignedMethod, claims)
 	access, err = token.SignedString(a.SignedKey)
 	if err != nil {
-		return "", "", errors.WithStack(err)
+		return "", "", errors.Wrap(err)
 	}
 
 	if isGenRefresh {
