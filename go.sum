@@ -1,8 +1,9 @@
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 git.rrdc.de/lib/authyclient v0.0.6 h1:+k+jMCtXF3rfXPQVxKNes4IRIw0kNxFRybiY5/ovxMc=
 git.rrdc.de/lib/authyclient v0.0.6/go.mod h1:I/7oY/XtBCxrUOvKkVeaydcO+DDhpUHO0gljzhBlXr4=
-git.rrdc.de/lib/log v0.1.9 h1:9o3jStmV9MKvyyxDpew8Ru9Gr+zo9+O7DqDZdROMJ0s=
 git.rrdc.de/lib/log v0.1.9/go.mod h1:+sqUOz0yfu/h/ET+L9Hk60+uqlex/YR44NgyXcCfvr8=
+git.rrdc.de/lib/log v0.2.4 h1:qC/2iHg9X3CZgPnfCZd7Tx6X1x2GX9ZbH8fWfpHBObo=
+git.rrdc.de/lib/log v0.2.4/go.mod h1:2nv3GPN5vAm4pU+XqZHmcc09ejCGI37m6fbtNdF6Ydo=
 github.com/ajg/form v1.5.1 h1:t9c7v8JUKu/XxOGBU0yjNpaMloxGEJhUkqFRq0ibGeU=
 github.com/ajg/form v1.5.1/go.mod h1:uL1WgH+h2mgNtvBq0339dVnzXdBETtL2LeUXaIv25UY=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
@@ -64,8 +65,9 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/raceresult/oauth2 v0.1.2 h1:3LT2O11PCU4uMqLsQMiF6199zEbVtw8lHc+ZRV39VAA=
 github.com/raceresult/oauth2 v0.1.2/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
 github.com/rs/xid v1.2.1/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
-github.com/rs/zerolog v1.19.0 h1:hYz4ZVdUgjXTBUmrkrw55j1nHx68LfOKIQk5IYtyScg=
 github.com/rs/zerolog v1.19.0/go.mod h1:IzD0RJ65iWH0w97OQQebJEvTZYvsCUm9WVLWBQrJRjo=
+github.com/rs/zerolog v1.20.0 h1:38k9hgtUBdxFwE34yS8rTHmHBa4eN16E4DJlv177LNs=
+github.com/rs/zerolog v1.20.0/go.mod h1:IzD0RJ65iWH0w97OQQebJEvTZYvsCUm9WVLWBQrJRjo=
 github.com/sergi/go-diff v1.0.0 h1:Kpca3qRNrduNnOQeazBd0ysaKrUJiIuISHxogkT9RPQ=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d h1:zE9ykElWQ6/NYmHa3jpm/yHnI4xSofP+UP6SpjHcSeM=

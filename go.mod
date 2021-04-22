@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	git.rrdc.de/lib/authyclient v0.0.6
-	git.rrdc.de/lib/log v0.1.9
+	git.rrdc.de/lib/log v0.2.4
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fasthttp-contrib/websocket v0.0.0-20160511215533-1f3b11f56072 // indirect
