@@ -435,6 +435,7 @@ func (s *Server) GetTokenData(ti oauth2.TokenInfo) map[string]interface{} {
 
 	if refresh := ti.GetRefresh(); refresh != "" {
 		data["refresh_token"] = refresh
+		data["refresh_expires_in"] = int64(ti.GetRefreshExpiresIn() / time.Second)
 	}
 
 	if fn := s.ExtensionFieldsHandler; fn != nil {
